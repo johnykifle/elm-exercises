@@ -1,5 +1,5 @@
 import Browser
-import Html exposing (Html, Attribute, span, input, text)
+import Html exposing (Html, Attribute, span, input, text, div, br )
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput)
 
@@ -17,13 +17,14 @@ main =
 
 
 type alias Model =
-  { input : String
+  { celsiusInput : String
+  , fahreniteInput : String
   }
 
 
 init : Model
 init =
-  { input = "" }
+  Model "" ""
 
 
 
@@ -31,14 +32,19 @@ init =
 
 
 type Msg
-  = Change String
+  = ChangeToCelsius String
+  | ChangeToFahrenite String
 
 
 update : Msg -> Model -> Model
 update msg model =
   case msg of
-    Change newInput ->
-      { model | input = newInput }
+    ChangeToCelsius newInput ->
+      { model | fahreniteInput = newInput }
+
+    ChangeToFahrenite newInput ->
+      { model |  celsiusInput = newInput }
+
 
 
 
@@ -47,32 +53,64 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-  case String.toFloat model.input of
+  div []
+    [ viewConvertCelsiusToFahrenite model
+    , newline
+    , newline
+    , viewConvertFahreniteToCelsius model
+    ]
+
+newline : Html Msg
+newline = br [] []
+
+viewConvertCelsiusToFahrenite : Model -> Html Msg
+viewConvertCelsiusToFahrenite model =
+    case String.toFloat model.celsiusInput of
     Just celsius ->
-      viewConverter model.input "blue" (String.fromFloat (celsius * 1.8 + 32))
+      viewConverter "cTof" model.celsiusInput "blue" (String.fromFloat (celsius * 1.8 + 32)) "°C" "°F "
 
     Nothing ->
-      viewConverter model.input "red" "???"
+      viewConverter "cTof" model.celsiusInput "red" "???" "°C " "°F "
+
+    
+viewConvertFahreniteToCelsius : Model -> Html Msg
+viewConvertFahreniteToCelsius model =
+    case String.toFloat model.fahreniteInput of
+        Just fahrenite ->
+            viewConverter "fToc" model.fahreniteInput "blue" (String.fromFloat ((fahrenite - 32) / 1.8)) "°F" "°C"
+
+        Nothing ->
+            viewConverter "fToc" model.fahreniteInput "red" "???" "°F " "°C = "
 
 
-viewConverter : String -> String -> String -> Html Msg
-viewConverter userInput color equivalentTemp =
-    let
-        bgColor =
-            case color of
-                "red" ->
-                    case String.length userInput of
-                        0 ->
-                            ""
-                        _ ->
-                            "red"
-                _ ->
-                    ""
-    in
+viewConverter : String-> String -> String -> String -> String -> String -> Html Msg
+viewConverter name userInput color equivalentTemp sourceTemp destTemp =
+    
     
   span []
-    [ input [ value userInput, onInput Change, style "width" "40px", style "border-color" bgColor ] []
-    , text "°C = "
+    [ viewInput name userInput color
+    , text sourceTemp 
     , span [ style "color" color ] [ text equivalentTemp ]
-    , text "°F"
+    , text destTemp
     ]
+
+viewInput : String -> String -> String -> Html Msg
+viewInput name userInput color =
+  let
+    bgColor =
+        case color of
+            "red" ->
+                case String.length userInput of
+                    0 ->
+                        ""
+                    _ ->
+                        "red"
+            _ ->
+                ""
+  in
+  case name of 
+    "fToc" -> 
+      input [ value userInput, id name, onInput ChangeToCelsius, style "width" "40px", style "border-color" bgColor ] []
+    
+    _ -> 
+      input [ value userInput, id name, onInput ChangeToFahrenite, style "width" "40px", style "border-color" bgColor ] []
